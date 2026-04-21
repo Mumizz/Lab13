@@ -1,7 +1,7 @@
 ---
 title: "Lab 13 - Colonizing Mars"
-author: "Insert your name here"
-date: "Insert date here"
+author: "Barbara Mu"
+date: "04/14/2026"
 output: github_document
 ---
 
@@ -9,17 +9,342 @@ output: github_document
 
 ```{r load-packages, message=FALSE}
 library(tidyverse) 
+
+if (!require("ggplot2")) install.packages("ggplot2")
+library(ggplot2)
+
+if (!require("MASS")) install.packages("MASS")
+library(MASS)
+
+# Install and load the tidyverse package
+if (!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
 ```
 
 ### Exercise 1
 
-Remove this text, and add your answer for Exercise 1 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+#### Exercise 1.1
+
+```{r}
+set.seed(123)
+age <- rnorm(100, mean = 30, sd = 5)
+```
+
+```{r}
+df_colonists <- data.frame(
+  id = 1:100, # this is our id column
+  age = age
+) # add the age column here
+
+head(df_colonists)
+```
+
+```{r}
+df_colonists %>% 
+  ggplot(aes(x = age)) + 
+  geom_histogram(binwidth = 5) + 
+  labs(x = "Age", 
+       y = "Frequency")
+```
+
+#### Exercise 1.2 
+
+```{r}
+set.seed(1)
+roleA <- rep(c("engineer", "scientist", "medic"),
+  length.out = 100
+)
+# this works if we want to set a specific number of each role
+roleB <- rep(c("engineer", "scientist", "medic"),
+  each = 34,
+  length.out = 100
+)
+
+roleC <- rep(c("engineer", "scientist", "medic"),
+  times = c(33, 33, 33),
+  length.out = 100
+)
+
+# if you want to use sampling weights
+roleD <- sample(c("engineer", "scientist", "medic"),
+  replace = TRUE,
+  size = 100, prob = c(1, 1, 1)
+)
+
+# if you want to randomly shuffle
+
+roleE <- sample(roleB, size = 100, replace = FALSE)
+```
+
+
+#### Exercise 1.3 
+
+```{r}
+df_colonists$role <- rep(c("engineer", "scientist", "medic"), length.out = 100)
+
+# Table
+table(df_colonists$role)
+```
+
+#### Exercise 1.4 
+
+```{r}
+set.seed(123)
+
+df_colonists$marsgar <- runif(100, min = 0, max = 100)
+
+summary(df_colonists$marsgar)
+```
+
+```{r}
+df_colonists %>% 
+  ggplot(aes(x = age, y = marsgar)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
 
 ### Exercise 2
 
-...
+#### Exercise 2.1
 
-Add exercise headings as needed.
+```{r}
+# Simulate technical skills based on age
+
+# Set the seed for reproducibility
+set.seed(1235)
+
+# Create a variable for technical skills
+df_colonists$technical_skills <- 2 * df_colonists$age + rnorm(100, mean = 0, sd = 1)
+
+summary(df_colonists$technical_skills)
+```
+
+```{r}
+df_colonists %>% 
+  ggplot(aes(x = age, y = technical_skills)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Age", 
+       y = "Technical Skills")
+```
+
+#### Exercise 2.2 
+
+```{r}
+# Simulate problem-solving abilities based on their assigned role
+
+df_colonists$problem_solving[df_colonists$role == "engineer"] <- rnorm(sum(df_colonists$role == "engineer"), mean = 100, sd = 10)
+
+df_colonists$problem_solving[df_colonists$role == "scientist"] <- rnorm(sum(df_colonists$role == "scientist"), mean = 80, sd = 10)
+
+df_colonists$problem_solving[df_colonists$role == "medic"] <- rnorm(sum(df_colonists$role == "medic"), mean = 60, sd = 10)
+```
+
+```{r}
+df_colonists %>%
+  ggplot(aes(x = problem_solving, fill = role)) +
+  geom_density(alpha = .5) + 
+  labs(x = 'Problem-Solving Skills',
+       y = 'Count',
+       fill = 'Role') +
+  scale_fill_viridis_d() +
+  theme_minimal()
+```
+
+
+### Exercise 3
+
+#### Exercise 3.2
+
+```{r}
+# Simulate resilience and agreeableness using mvrnorm
+
+# Define mean and covariance matrix
+mean_traits <- c(50, 50)
+cov_matrix <- matrix(c(100, 50, 50, 100), ncol = 2)
+
+# Generate correlated data
+traits_data <- mvrnorm(n = 100, mu = mean_traits, Sigma = cov_matrix, empirical = FALSE)
+
+head(traits_data)
+```
+```{r}
+df_colonists$resilience <- traits_data[, 1] 
+df_colonists$agreeableness <- traits_data[, 2]
+```
+
+
+```{r}
+cor(df_colonists$resilience, df_colonists$agreeableness)
+```
+
+#### Exercise 3.3
+
+```{r}
+cor_matrix_bigfive <- matrix(
+  c(
+1.0000, 0.2599, 0.1972, 0.1860, 0.2949,
+0.2599, 1.0000, 0.1576, 0.2306, 0.0720,
+0.1972, 0.1576, 1.0000, 0.2866, 0.1951,
+0.1860, 0.2306, 0.2866, 1.0000, 0.1574,
+0.2949, 0.0720, 0.1951, 0.1574, 1.0000
+  ),
+  nrow = 5, ncol = 5, byrow = TRUE,
+  dimnames = list(
+c("EX", "ES", "AG", "CO", "OP"),
+c("EX", "ES", "AG", "CO", "OP")
+  )
+)
+```
+
+```{r}
+big5_cor <- matrix(c(
+#    O      C      E      A      N
+  1.00,  0.27,  0.45,  0.28, -0.15,  # O
+  0.27,  1.00,  0.26,  0.37, -0.40,  # C
+  0.45,  0.26,  1.00,  0.25, -0.24,  # E
+  0.28,  0.37,  0.25,  1.00, -0.29,  # A
+ -0.15, -0.40, -0.24, -0.29,  1.00   # N
+), ncol = 5)
+
+colnames(big5_cor) <- rownames(big5_cor) <- 
+  c("openness", "conscientiousness", "extraversion", 
+    "agreeableness", "neuroticism")
+```
+
+```{r}
+# Standard deviations for each trait
+sds <- c(10, 10, 10, 10, 10)
+
+# Convert correlation to covariance matrix
+cov_big5 <- diag(sds) %*% big5_cor %*% diag(sds)
+```
+
+```{r}
+set.seed(42)
+
+# Means for all five traits
+mean_big5 <- c(50, 50, 50, 50, 50)
+
+# Generate correlated Big Five data
+big5_data <- mvrnorm(n = 100,
+                     mu = mean_big5,
+                     Sigma = cov_big5)
+
+# Add to dataframe
+df_colonists$openness          <- big5_data[, 1]
+df_colonists$conscientiousness <- big5_data[, 2]
+df_colonists$extraversion      <- big5_data[, 3]
+df_colonists$agreeableness2    <- big5_data[, 4]
+df_colonists$neuroticism       <- big5_data[, 5]
+
+# Check how closely simulated correlations match population parameters
+round(cor(big5_data), 2)
+```
+
+### Exercise 4 
+
+#### Exercise 4.1 
+
+```{r}
+set.seed(42)
+
+# Define a function for one colony simulation
+simulate_colony <- function() {
+  # Generate Big Five data for one colony
+  colony_data <- mvrnorm(n = 100,
+                         mu = mean_big5,
+                         Sigma = cov_big5)
+  
+  # Extract extraversion (column 3)
+  extrav <- colony_data[, 3]
+  open <- colony_data[, 1]
+  
+  # Return statistics of interest
+  c(mean_extrav = mean(extrav),
+    sd_extrav = sd(extrav),
+    cor_extrav_open = cor(extrav, open))
+}
+
+# Run 100 times
+results <- replicate(100, simulate_colony())
+
+# replicate() returns a matrix — transpose for easier use
+results_df <- as.data.frame(t(results))
+
+head(results_df)
+```
+
+```{r}
+set.seed(42)
+
+# Pre-allocate storage
+results_loop <- data.frame(
+  mean_extrav = numeric(100),
+  sd_extrav = numeric(100),
+  cor_extrav_open = numeric(100)
+)
+
+for (i in 1:100) {
+  colony_data <- mvrnorm(n = 100,
+                         mu = mean_big5,
+                         Sigma = cov_big5)
+  
+  results_loop$mean_extrav[i] <- mean(colony_data[, 3])
+  results_loop$sd_extrav[i] <- sd(colony_data[, 3])
+  results_loop$cor_extrav_open[i] <- cor(colony_data[, 3], 
+                                         colony_data[, 1])
+}
+```
+
+#### Exercise 4.2 
+
+```{r}
+library(ggplot2)
+
+# Population parameter for reference
+pop_cor <- 0.45
+
+# Plot distribution of correlations
+ggplot(results_df, aes(x = cor_extrav_open)) +
+  geom_histogram(binwidth = 0.05, 
+                 fill = "steelblue", 
+                 color = "white",
+                 alpha = 0.8) +
+  geom_vline(xintercept = pop_cor,
+             color = "red",
+             linetype = "dashed",
+             linewidth = 1) +
+  annotate("text", 
+           x = pop_cor + 0.02, 
+           y = 15,
+           label = paste("Population r =", pop_cor),
+           color = "red",
+           hjust = 0) +
+  labs(title = "Distribution of Extraversion–Openness Correlations Across 100 Colonies",
+       x = "Correlation (r)",
+       y = "Count") +
+  theme_minimal()
+
+# Also plot mean extraversion distribution
+ggplot(results_df, aes(x = mean_extrav)) +
+  geom_histogram(binwidth = 0.5,
+                 fill = "purple",
+                 color = "white",
+                 alpha = 0.8) +
+  geom_vline(xintercept = 50,
+             color = "red",
+             linetype = "dashed",
+             linewidth = 1) +
+  annotate("text",
+           x = 51,
+           y = 21,
+           label = "Population mean = 50",
+           color = "red",
+           hjust = 0) +
+  labs(title = "Distribution of Mean Extraversion Across 100 Colonies",
+       x = "Mean Extraversion",
+       y = "Count") +
+  theme_minimal()
+```
+

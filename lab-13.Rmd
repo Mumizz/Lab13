@@ -40,10 +40,10 @@ head(df_colonists)
 ```
 
 ```{r}
-df_colonists %>%
-  ggplot(aes(x = age)) +
-  geom_histogram(binwidth = 5) +
-  labs(x = "Age",
+df_colonists %>% 
+  ggplot(aes(x = age)) + 
+  geom_histogram(binwidth = 5) + 
+  labs(x = "Age", 
        y = "Frequency")
 ```
 

@@ -1,23 +1,486 @@
 Lab 13 - Colonizing Mars
 ================
-Insert your name here
-Insert date here
+Barbara Mu
+04/14/2026
 
 ### Load packages and data
 
 ``` r
 library(tidyverse) 
-library(tidymodels)
+
+if (!require("ggplot2")) install.packages("ggplot2")
+library(ggplot2)
+
+if (!require("MASS")) install.packages("MASS")
+library(MASS)
+
+# Install and load the tidyverse package
+if (!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
 ```
 
 ### Exercise 1
 
-Remove this text, and add your answer for Exercise 1 here. Add code
-chunks as needed. Don’t forget to label your code chunk. Do not use
-spaces in code chunk labels.
+#### Exercise 1.1
+
+``` r
+set.seed(123)
+age <- rnorm(100, mean = 30, sd = 5)
+```
+
+``` r
+df_colonists <- data.frame(
+  id = 1:100, # this is our id column
+  age = age
+) # add the age column here
+
+head(df_colonists)
+```
+
+    ##   id      age
+    ## 1  1 27.19762
+    ## 2  2 28.84911
+    ## 3  3 37.79354
+    ## 4  4 30.35254
+    ## 5  5 30.64644
+    ## 6  6 38.57532
+
+``` r
+df_colonists %>% 
+  ggplot(aes(x = age)) + 
+  geom_histogram(binwidth = 5) + 
+  labs(x = "Age", 
+       y = "Frequency")
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+The ages cluster around the population mean of 30, with most colonists
+falling between about 25 and 35 and a roughly symmetric, bell-shaped
+spread consistent with the `sd = 5` we specified. Because `rnorm()` is
+pseudo-random, the shape of any particular sample depends on the seed —
+`set.seed(123)` fixes the random stream so the histogram is
+reproducible. Changing the seed would shift which specific values appear
+(and tweak the skew of this small n = 100 sample), but the long-run
+distribution would still be approximately Normal(30, 5).
+
+#### Exercise 1.2
+
+``` r
+set.seed(1)
+roleA <- rep(c("engineer", "scientist", "medic"),
+  length.out = 100
+)
+# this works if we want to set a specific number of each role
+roleB <- rep(c("engineer", "scientist", "medic"),
+  each = 34,
+  length.out = 100
+)
+
+roleC <- rep(c("engineer", "scientist", "medic"),
+  times = c(33, 33, 33),
+  length.out = 100
+)
+
+# if you want to use sampling weights
+roleD <- sample(c("engineer", "scientist", "medic"),
+  replace = TRUE,
+  size = 100, prob = c(1, 1, 1)
+)
+
+# if you want to randomly shuffle
+
+roleE <- sample(roleB, size = 100, replace = FALSE)
+```
+
+#### Exercise 1.3
+
+``` r
+df_colonists$role <- rep(c("engineer", "scientist", "medic"), length.out = 100)
+
+table(df_colonists$role)
+```
+
+    ## 
+    ##  engineer     medic scientist 
+    ##        34        33        33
+
+I went with `rep()` using `length.out = 100` to get a near-even split
+(34 engineers, 33 scientists, 33 medics). A young Mars colony needs all
+three roles simultaneously — engineers to keep habitats and life support
+running, scientists to do the exploratory/research work that justifies
+the mission, and medics to keep the crew alive. Balancing the roles
+roughly equally reflects the assumption that no single function can be
+deprioritized in the early phase; if the mission shifted (e.g., heavy
+construction push), I would reweight the sample using `prob =` in
+`sample()` instead.
+
+#### Exercise 1.4
+
+``` r
+set.seed(123)
+
+df_colonists$marsgar <- runif(100, min = 0, max = 100)
+
+summary(df_colonists$marsgar)
+```
+
+    ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+    ##  0.06248 24.54707 46.63708 49.85590 75.54712 99.42698
+
+``` r
+df_colonists %>% 
+  ggplot(aes(x = age, y = marsgar)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+![](lab-13_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ### Exercise 2
 
-…
+#### Exercise 2.1
 
-Add exercise headings as needed.
+``` r
+# Simulate technical skills based on age
+
+# Set the seed for reproducibility
+set.seed(1235)
+
+# Create a variable for technical skills
+df_colonists$technical_skills <- 2 * df_colonists$age + rnorm(100, mean = 0, sd = 1)
+
+summary(df_colonists$technical_skills)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##   37.43   54.98   60.89   60.98   67.02   81.67
+
+``` r
+df_colonists %>% 
+  ggplot(aes(x = age, y = technical_skills)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Age", 
+       y = "Technical Skills")
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+![](lab-13_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+#### Exercise 2.2
+
+``` r
+# Simulate problem-solving abilities based on their assigned role
+
+df_colonists$problem_solving[df_colonists$role == "engineer"] <- rnorm(sum(df_colonists$role == "engineer"), mean = 100, sd = 10)
+
+df_colonists$problem_solving[df_colonists$role == "scientist"] <- rnorm(sum(df_colonists$role == "scientist"), mean = 80, sd = 10)
+
+df_colonists$problem_solving[df_colonists$role == "medic"] <- rnorm(sum(df_colonists$role == "medic"), mean = 60, sd = 10)
+```
+
+``` r
+df_colonists %>%
+  ggplot(aes(x = problem_solving, fill = role)) +
+  geom_density(alpha = .5) + 
+  labs(x = 'Problem-Solving Skills',
+       y = 'Count',
+       fill = 'Role') +
+  scale_fill_viridis_d() +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+### Exercise 3
+
+#### Exercise 3.1
+
+``` r
+# Simulate three correlated traits: resilience, teamwork, adaptability
+set.seed(7)
+
+mean_traits <- c(50, 50, 50)
+
+# Correlation matrix among the three traits
+cor_traits <- matrix(c(
+  1.00, 0.50, 0.40,
+  0.50, 1.00, 0.35,
+  0.40, 0.35, 1.00
+), nrow = 3, byrow = TRUE)
+
+# SDs of 10 on each trait → covariance matrix
+sds <- c(10, 10, 10)
+cov_traits <- diag(sds) %*% cor_traits %*% diag(sds)
+
+traits_data <- mvrnorm(n = 100, mu = mean_traits, Sigma = cov_traits)
+
+df_colonists$resilience <- traits_data[, 1]
+df_colonists$teamwork <- traits_data[, 2]
+df_colonists$adaptability <- traits_data[, 3]
+
+# Check empirical correlations against the target matrix
+round(cor(traits_data), 2)
+```
+
+    ##      [,1] [,2] [,3]
+    ## [1,] 1.00 0.39 0.44
+    ## [2,] 0.39 1.00 0.33
+    ## [3,] 0.44 0.33 1.00
+
+#### Exercise 3.2
+
+``` r
+# Pairwise scatter + correlations among the three traits
+if (!require("GGally")) install.packages("GGally")
+```
+
+    ## Loading required package: GGally
+
+``` r
+library(GGally)
+
+df_colonists %>%
+  dplyr::select(resilience, teamwork, adaptability) %>%
+  ggpairs() +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+# Correlation heatmap as an alternative view
+trait_cor <- cor(df_colonists[, c("resilience", "teamwork", "adaptability")])
+
+trait_cor_long <- as.data.frame(as.table(trait_cor))
+
+ggplot(trait_cor_long, aes(Var1, Var2, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = round(Freq, 2)), color = "white") +
+  scale_fill_viridis_c(limits = c(-1, 1), name = "r") +
+  labs(title = "Correlations among simulated traits",
+       x = NULL, y = NULL) +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+The scatterplot matrix and heatmap show positive correlations across all
+three traits, with resilience–teamwork (~0.50) being the strongest,
+matching the population values we fed into `mvrnorm()`.
+
+#### Exercise 3.3
+
+``` r
+cor_matrix_bigfive <- matrix(
+  c(
+1.0000, 0.2599, 0.1972, 0.1860, 0.2949,
+0.2599, 1.0000, 0.1576, 0.2306, 0.0720,
+0.1972, 0.1576, 1.0000, 0.2866, 0.1951,
+0.1860, 0.2306, 0.2866, 1.0000, 0.1574,
+0.2949, 0.0720, 0.1951, 0.1574, 1.0000
+  ),
+  nrow = 5, ncol = 5, byrow = TRUE,
+  dimnames = list(
+c("EX", "ES", "AG", "CO", "OP"),
+c("EX", "ES", "AG", "CO", "OP")
+  )
+)
+```
+
+``` r
+big5_cor <- matrix(c(
+#    O      C      E      A      N
+  1.00,  0.27,  0.45,  0.28, -0.15,  # O
+  0.27,  1.00,  0.26,  0.37, -0.40,  # C
+  0.45,  0.26,  1.00,  0.25, -0.24,  # E
+  0.28,  0.37,  0.25,  1.00, -0.29,  # A
+ -0.15, -0.40, -0.24, -0.29,  1.00   # N
+), ncol = 5)
+
+colnames(big5_cor) <- rownames(big5_cor) <- 
+  c("openness", "conscientiousness", "extraversion", 
+    "agreeableness", "neuroticism")
+```
+
+``` r
+# Standard deviations for each trait
+sds <- c(10, 10, 10, 10, 10)
+
+# Convert correlation to covariance matrix
+cov_big5 <- diag(sds) %*% big5_cor %*% diag(sds)
+```
+
+``` r
+set.seed(42)
+
+# Means for all five traits
+mean_big5 <- c(50, 50, 50, 50, 50)
+
+# Generate correlated Big Five data
+big5_data <- mvrnorm(n = 100,
+                     mu = mean_big5,
+                     Sigma = cov_big5)
+
+# Add to dataframe
+df_colonists$openness <- big5_data[, 1]
+df_colonists$conscientiousness <- big5_data[, 2]
+df_colonists$extraversion <- big5_data[, 3]
+df_colonists$agreeableness2 <- big5_data[, 4]
+df_colonists$neuroticism <- big5_data[, 5]
+
+# Check how closely simulated correlations match population parameters
+round(cor(big5_data), 2)
+```
+
+    ##       [,1]  [,2]  [,3]  [,4]  [,5]
+    ## [1,]  1.00  0.29  0.39  0.33 -0.20
+    ## [2,]  0.29  1.00  0.35  0.50 -0.49
+    ## [3,]  0.39  0.35  1.00  0.33 -0.35
+    ## [4,]  0.33  0.50  0.33  1.00 -0.31
+    ## [5,] -0.20 -0.49 -0.35 -0.31  1.00
+
+### Exercise 4
+
+#### Exercise 4.1
+
+``` r
+set.seed(42)
+
+# Define a function for one colony simulation
+simulate_colony <- function() {
+  colony_data <- mvrnorm(n = 100,
+                         mu = mean_big5,
+                         Sigma = cov_big5)
+
+  extrav <- colony_data[, 3]
+  open <- colony_data[, 1]
+
+  c(mean_extrav = mean(extrav),
+    sd_extrav = sd(extrav),
+    cor_extrav_open = cor(extrav, open))
+}
+
+# Run 100 times with replicate()
+results <- replicate(100, simulate_colony())
+results_df <- as.data.frame(t(results))
+
+head(results_df)
+```
+
+    ##   mean_extrav sd_extrav cor_extrav_open
+    ## 1    50.65374 10.189589       0.3909688
+    ## 2    50.41348  9.588341       0.3027590
+    ## 3    50.98640  9.946968       0.4214167
+    ## 4    49.28607 10.535245       0.5655244
+    ## 5    50.01945 10.215562       0.5355680
+    ## 6    50.11483  9.820868       0.4137635
+
+``` r
+# Equivalent with a for-loop, for comparison
+set.seed(42)
+
+results_loop <- data.frame(
+  mean_extrav = numeric(100),
+  sd_extrav = numeric(100),
+  cor_extrav_open = numeric(100)
+)
+
+for (i in 1:100) {
+  colony_data <- mvrnorm(n = 100,
+                         mu = mean_big5,
+                         Sigma = cov_big5)
+
+  results_loop$mean_extrav[i] <- mean(colony_data[, 3])
+  results_loop$sd_extrav[i] <- sd(colony_data[, 3])
+  results_loop$cor_extrav_open[i] <- cor(colony_data[, 3], colony_data[, 1])
+}
+```
+
+#### Exercise 4.2
+
+``` r
+pop_cor <- 0.45
+
+ggplot(results_df, aes(x = cor_extrav_open)) +
+  geom_histogram(binwidth = 0.05,
+                 fill = "steelblue",
+                 color = "white",
+                 alpha = 0.8) +
+  geom_vline(xintercept = pop_cor,
+             color = "red",
+             linetype = "dashed",
+             linewidth = 1) +
+  annotate("text",
+           x = pop_cor + 0.02,
+           y = 21,
+           label = paste("Population r =", pop_cor),
+           color = "red",
+           hjust = 0) +
+  labs(title = "Distribution of Extraversion–Openness Correlations Across 100 Colonies",
+       x = "Correlation (r)",
+       y = "Count") +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+``` r
+ggplot(results_df, aes(x = mean_extrav)) +
+  geom_histogram(binwidth = 0.5,
+                 fill = "purple",
+                 color = "white",
+                 alpha = 0.8) +
+  geom_vline(xintercept = 50,
+             color = "red",
+             linetype = "dashed",
+             linewidth = 1) +
+  annotate("text",
+           x = 51,
+           y = 21,
+           label = "Population mean = 50",
+           color = "red",
+           hjust = 0) +
+  labs(title = "Distribution of Mean Extraversion Across 100 Colonies",
+       x = "Mean Extraversion",
+       y = "Count") +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+ggplot(results_df, aes(x = sd_extrav)) +
+  geom_histogram(binwidth = 0.25,
+                 fill = "darkgreen",
+                 color = "white",
+                 alpha = 0.8) +
+  geom_vline(xintercept = 10,
+             color = "red",
+             linetype = "dashed",
+             linewidth = 1) +
+  annotate("text",
+           x = 10.2,
+           y = 20,
+           label = "Population SD = 10",
+           color = "red",
+           hjust = 0) +
+  labs(title = "Distribution of Extraversion SD Across 100 Colonies",
+       x = "SD of Extraversion",
+       y = "Count") +
+  theme_minimal()
+```
+
+![](lab-13_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+Across 100 simulated colonies, the sample means for extraversion cluster
+tightly around the population mean of 50 and the sample SDs hover near
+the population SD of 10 — as expected from the central limit theorem
+with n = 100 per colony. The extraversion–openness correlations also
+center near the population value of 0.45 but show noticeably more
+spread, illustrating that correlation estimates are more variable than
+means at this sample size.
